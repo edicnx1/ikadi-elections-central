@@ -119,7 +119,9 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
       province: formData.province,
       department: formData.department,
       commune: formData.commune,
-      arrondissement: formData.arrondissement
+      arrondissement: formData.arrondissement,
+      candidatesList: formData.candidates, // Ajouter la liste complète des candidats
+      isActive: true // Marquer comme élection active par défaut
     };
     
     onSubmit(election);
@@ -582,9 +584,9 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
             {currentStep < 5 && (
               <Button
                 onClick={handleNext}
-                disabled={false} // Désactiver temporairement la validation
+                disabled={!canProceed()}
                 className="flex items-center gov-bg-primary hover:bg-gov-blue-dark"
-                style={{ backgroundColor: '#1d4ed8' }} // Couleur bleue explicite
+                style={{ backgroundColor: '#1d4ed8' }}
                 data-testid="next-button"
               >
                 <span className="hidden sm:inline">Suivant</span>
@@ -598,14 +600,12 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
               <Button
                 onClick={handleSubmit}
                 className="gov-bg-primary hover:bg-gov-blue-dark"
-                style={{ backgroundColor: '#1d4ed8' }} // Couleur bleue explicite
+                style={{ backgroundColor: '#1d4ed8' }}
               >
                 <span className="hidden sm:inline">Créer l'élection</span>
                 <span className="sm:hidden">Créer</span>
               </Button>
             )}
-            
-
           </div>
         </div>
       </div>

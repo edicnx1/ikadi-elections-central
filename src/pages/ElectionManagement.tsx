@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,55 +36,93 @@ interface Election {
   department: string;
   commune: string;
   arrondissement: string;
+  candidatesList?: Array<{
+    id: string;
+    name: string;
+    party: string;
+    isOurCandidate: boolean;
+  }>;
+  isActive?: boolean;
 }
 
 const ElectionManagement = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [selectedElection, setSelectedElection] = useState<Election | null>(null);
-  const [elections, setElections] = useState<Election[]>([
-    {
-      id: 1,
-      title: "Législatives 2024 - Moanda",
-      date: "2024-12-15",
-      status: "À venir",
-      statusColor: "blue",
-      description: "Circonscription de la Commune de Moanda, 1er Arrondissement",
-      voters: 15240,
-      candidates: 5,
-      centers: 12,
-      bureaux: 48,
-      location: "Commune de Moanda, 1er Arrondissement",
-      type: "Législatives",
-      seatsAvailable: 1,
-      budget: 50000000,
-      voteGoal: 8000,
-      province: "Haut-Ogooué",
-      department: "Lemboumbi-Leyou",
-      commune: "Commune de Moanda",
-      arrondissement: "1er Arrondissement"
-    },
-    {
-      id: 2,
-      title: "Municipales 2024 - Libreville",
-      date: "2024-10-20",
-      status: "En cours",
-      statusColor: "green",
-      description: "Circonscription de Libreville Centre",
-      voters: 89456,
-      candidates: 8,
-      centers: 28,
-      bureaux: 112,
-      location: "Libreville Centre",
-      type: "Locales",
-      seatsAvailable: 3,
-      budget: 75000000,
-      voteGoal: 45000,
-      province: "Estuaire",
-      department: "Libreville",
-      commune: "Libreville",
-      arrondissement: "Centre"
+  const [elections, setElections] = useState<Election[]>([]);
+
+  // Charger les élections depuis localStorage au montage du composant
+  useEffect(() => {
+    const savedElections = localStorage.getItem('elections');
+    if (savedElections) {
+      setElections(JSON.parse(savedElections));
+    } else {
+      // Données par défaut si aucune élection sauvegardée
+      const defaultElections = [
+        {
+          id: 1,
+          title: "Législatives 2024 - Moanda",
+          date: "2024-12-15",
+          status: "À venir",
+          statusColor: "blue",
+          description: "Circonscription de la Commune de Moanda, 1er Arrondissement",
+          voters: 15240,
+          candidates: 5,
+          centers: 12,
+          bureaux: 48,
+          location: "Commune de Moanda, 1er Arrondissement",
+          type: "Législatives",
+          seatsAvailable: 1,
+          budget: 50000000,
+          voteGoal: 8000,
+          province: "Haut-Ogooué",
+          department: "Lemboumbi-Leyou",
+          commune: "Commune de Moanda",
+          arrondissement: "1er Arrondissement",
+          candidatesList: [
+            { id: "C001", name: "ALLOGHO-OBIANG Marie", party: "Parti Démocratique Gabonais", isOurCandidate: true },
+            { id: "C002", name: "NDONG Jean-Baptiste", party: "Union Nationale", isOurCandidate: false },
+            { id: "C003", name: "OVONO-EBANG Claire", party: "Rassemblement pour la Patrie", isOurCandidate: false }
+          ],
+          isActive: true
+        },
+        {
+          id: 2,
+          title: "Municipales 2024 - Libreville",
+          date: "2024-10-20",
+          status: "En cours",
+          statusColor: "green",
+          description: "Circonscription de Libreville Centre",
+          voters: 89456,
+          candidates: 8,
+          centers: 28,
+          bureaux: 112,
+          location: "Libreville Centre",
+          type: "Locales",
+          seatsAvailable: 3,
+          budget: 75000000,
+          voteGoal: 45000,
+          province: "Estuaire",
+          department: "Libreville",
+          commune: "Libreville",
+          arrondissement: "Centre",
+          candidatesList: [
+            { id: "C001", name: "MBOUMBA Pierre", party: "Parti du Renouveau", isOurCandidate: false },
+            { id: "C002", name: "NGUEMA Christine", party: "Alliance Démocratique", isOurCandidate: true }
+          ],
+          isActive: false
+        }
+      ];
+      setElections(defaultElections);
+      localStorage.setItem('elections', JSON.stringify(defaultElections));
     }
-  ]);
+  }, []);
+
+  // Sauvegarder les élections dans localStorage à chaque modification
+  useEffect(() => {
+    if (elections.length > 0) {
+      localStorage.setItem('elections', JSON.stringify(elections));
+    }
+  }, [elections]);
 
   const getStatusVariant = (color: string) => {
     switch (color) {
@@ -114,13 +152,28 @@ const ElectionManagement = () => {
     setSelectedElection(election);
   };
 
-  const handleAddElection = (newElection: Omit<Election, 'id'>) => {
+  const handleAddElection = (newElectionData: any) => {
+    // Désactiver toutes les autres élections
+    const updatedElections = elections.map(e => ({ ...e, isActive: false }));
+    
     const election: Election = {
-      ...newElection,
+      ...newElectionData,
       id: elections.length + 1,
+      isActive: true, // La nouvelle élection devient active
+      candidatesList: newElectionData.candidates || []
     };
-    setElections([...elections, election]);
+    
+    const newElections = [...updatedElections, election];
+    setElections(newElections);
     setShowWizard(false);
+  };
+
+  const handleSetActiveElection = (electionId: number) => {
+    const updatedElections = elections.map(e => ({
+      ...e,
+      isActive: e.id === electionId
+    }));
+    setElections(updatedElections);
   };
 
   if (selectedElection) {
@@ -160,13 +213,20 @@ const ElectionManagement = () => {
             return (
               <Card 
                 key={election.id} 
-                className="gov-card hover:shadow-md transition-shadow cursor-pointer"
+                className={`gov-card hover:shadow-md transition-shadow cursor-pointer ${
+                  election.isActive ? 'border-green-500 border-2' : ''
+                }`}
                 onClick={() => handleElectionClick(election)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start gap-2">
                     <CardTitle className="text-base sm:text-lg font-semibold text-gov-gray line-clamp-2">
                       {election.title}
+                      {election.isActive && (
+                        <Badge className="ml-2 bg-green-100 text-green-800 text-xs">
+                          Élection Active
+                        </Badge>
+                      )}
                     </CardTitle>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
                       <Badge variant={getStatusVariant(statusInfo.color)} className="text-xs">
@@ -228,20 +288,34 @@ const ElectionManagement = () => {
                       </div>
                     </div>
 
-                    {/* Action Button */}
-                    <Button 
-                      variant="outline" 
-                      className="w-full mt-3 sm:mt-4 group text-xs sm:text-sm h-8 sm:h-10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleElectionClick(election);
-                      }}
-                    >
-                      <Eye className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Voir les détails</span>
-                      <span className="sm:hidden">Détails</span>
-                      <ArrowRight className="w-3 sm:w-4 h-3 sm:h-4 ml-1 sm:ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Button>
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 text-xs sm:text-sm h-8 sm:h-10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleElectionClick(election);
+                        }}
+                      >
+                        <Eye className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Détails</span>
+                        <span className="sm:hidden">Voir</span>
+                      </Button>
+                      
+                      {!election.isActive && (
+                        <Button 
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetActiveElection(election.id);
+                          }}
+                        >
+                          Activer
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
