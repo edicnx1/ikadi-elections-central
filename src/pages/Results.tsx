@@ -227,7 +227,7 @@ const Results = () => {
                   </TabsContent>
 
                   <TabsContent value="consolidation" className="space-y-6 mt-0">
-                    <ConsolidationSection />
+                    <ConsolidationSection currentElection={currentElection} />
                   </TabsContent>
 
                   <TabsContent value="publish" className="space-y-6 mt-0">

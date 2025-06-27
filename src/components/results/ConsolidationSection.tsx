@@ -25,85 +25,116 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell } from 'recharts';
 
-const ConsolidationSection = () => {
+interface Election {
+  id: number;
+  title: string;
+  date: string;
+  status: string;
+  statusColor: string;
+  description: string;
+  voters: number;
+  candidates: number;
+  centers: number;
+  bureaux: number;
+  location: string;
+  type: string;
+  seatsAvailable: number;
+  budget?: number;
+  voteGoal?: number;
+  province: string;
+  department: string;
+  commune: string;
+  arrondissement: string;
+  candidatesList?: Array<{
+    id: string;
+    name: string;
+    party: string;
+    isOurCandidate: boolean;
+  }>;
+  isActive?: boolean;
+}
+
+interface ConsolidationSectionProps {
+  currentElection?: Election | null;
+}
+
+const ConsolidationSection = ({ currentElection }: ConsolidationSectionProps) => {
   const [selectedLevel, setSelectedLevel] = useState('province');
-  const [selectedRegion, setSelectedRegion] = useState('Estuaire');
+  const [selectedRegion, setSelectedRegion] = useState(currentElection?.province || 'Province');
   const [viewMode, setViewMode] = useState('overview');
 
-  // Mock data pour les résultats consolidés
-  const consolidatedResults = {
+  // Données consolidées basées sur l'élection réelle
+  const consolidatedResults = currentElection ? {
     global: {
-      totalVotants: 125430,
-      totalInscrits: 185267,
+      totalVotants: Math.floor(currentElection.voters * 0.677), // 67.7% de participation
+      totalInscrits: currentElection.voters,
       tauxParticipation: 67.7,
-      bulletinsNuls: 3125,
-      suffragesExprimes: 122305,
-      centresTermines: 42,
-      totalCentres: 45
+      bulletinsNuls: Math.floor(currentElection.voters * 0.025), // 2.5% de bulletins nuls
+      suffragesExprimes: Math.floor(currentElection.voters * 0.652), // 65.2% de suffrages exprimés
+      centresTermines: Math.floor(currentElection.centers * 0.93), // 93% des centres terminés
+      totalCentres: currentElection.centers
     },
-    candidates: [
-      {
-        id: 'C001',
-        name: 'ALLOGHO-OBIANG Marie',
-        party: 'Parti Démocratique Gabonais',
-        votes: 52341,
-        percentage: 42.8,
-        color: '#3B82F6'
-      },
-      {
-        id: 'C002',
-        name: 'NDONG Jean-Baptiste',
-        party: 'Union Nationale',
-        votes: 43692,
-        percentage: 35.7,
-        color: '#10B981'
-      },
-      {
-        id: 'C003',
-        name: 'OVONO-EBANG Claire',
-        party: 'Rassemblement pour la Patrie',
-        votes: 26272,
-        percentage: 21.5,
-        color: '#F59E0B'
-      }
-    ]
+    candidates: currentElection.candidatesList ? currentElection.candidatesList.map((candidate, index) => {
+      // Répartition simulée des voix basée sur l'index
+      const basePercentage = index === 0 ? 42.8 : (index === 1 ? 35.7 : 21.5 / (currentElection.candidatesList!.length - 2));
+      const votes = Math.floor((currentElection.voters * 0.652) * (basePercentage / 100));
+      return {
+        id: candidate.id,
+        name: candidate.name,
+        party: candidate.party,
+        votes: votes,
+        percentage: basePercentage,
+        color: index === 0 ? '#3B82F6' : (index === 1 ? '#10B981' : '#F59E0B')
+      };
+    }) : []
+  } : {
+    global: {
+      totalVotants: 0,
+      totalInscrits: 0,
+      tauxParticipation: 0,
+      bulletinsNuls: 0,
+      suffragesExprimes: 0,
+      centresTermines: 0,
+      totalCentres: 0
+    },
+    candidates: []
   };
 
-  const geographicResults = [
+  const geographicResults = currentElection ? [
     {
-      region: 'Libreville Nord',
-      inscrits: 45230,
-      votants: 31250,
+      region: `${currentElection.commune} - Zone 1`,
+      inscrits: Math.floor(currentElection.voters * 0.4),
+      votants: Math.floor(currentElection.voters * 0.4 * 0.691),
       participation: 69.1,
-      candidateResults: [
-        { candidate: 'ALLOGHO-OBIANG', votes: 13540, percentage: 43.3 },
-        { candidate: 'NDONG', votes: 10890, percentage: 34.9 },
-        { candidate: 'OVONO-EBANG', votes: 6820, percentage: 21.8 }
-      ]
+      candidateResults: consolidatedResults.candidates.slice(0, 3).map(candidate => ({
+        candidate: candidate.name.split(' ')[0],
+        votes: Math.floor(candidate.votes * 0.4),
+        percentage: candidate.percentage
+      }))
     },
     {
-      region: 'Libreville Sud',
-      inscrits: 38750,
-      votants: 25890,
+      region: `${currentElection.commune} - Zone 2`,
+      inscrits: Math.floor(currentElection.voters * 0.35),
+      votants: Math.floor(currentElection.voters * 0.35 * 0.668),
       participation: 66.8,
-      candidateResults: [
-        { candidate: 'ALLOGHO-OBIANG', votes: 10980, percentage: 42.4 },
-        { candidate: 'NDONG', votes: 9340, percentage: 36.1 },
-        { candidate: 'OVONO-EBANG', votes: 5570, percentage: 21.5 }
-      ]
+      candidateResults: consolidatedResults.candidates.slice(0, 3).map(candidate => ({
+        candidate: candidate.name.split(' ')[0],
+        votes: Math.floor(candidate.votes * 0.35),
+        percentage: candidate.percentage
+      }))
     },
     {
-      region: 'Owendo',
-      inscrits: 28450,
-      votants: 19230,
+      region: `${currentElection.commune} - Zone 3`,
+      inscrits: Math.floor(currentElection.voters * 0.25),
+      votants: Math.floor(currentElection.voters * 0.25 * 0.676),
       participation: 67.6,
-      candidateResults: [
-        { candidate: 'ALLOGHO-OBIANG', votes: 8210, percentage: 42.7 },
-        { candidate: 'NDONG', votes: 6890, percentage: 35.8 },
-        { candidate: 'OVONO-EBANG', votes: 4130, percentage: 21.5 }
-      ]
+      candidateResults: consolidatedResults.candidates.slice(0, 3).map(candidate => ({
+        candidate: candidate.name.split(' ')[0],
+        votes: Math.floor(candidate.votes * 0.25),
+        percentage: candidate.percentage
+      }))
     }
-  ];
+  ] : [];
 
   const barChartData = consolidatedResults.candidates.map(candidate => ({
     name: candidate.name.split(' ')[0],
@@ -118,11 +149,56 @@ const ConsolidationSection = () => {
   }));
 
   const handleExport = (format: 'pdf' | 'csv' | 'excel') => {
-    console.log(`Exporting results in ${format} format`);
+    console.log(`Exporting results in ${format} format for election: ${currentElection?.title}`);
   };
+
+  if (!currentElection) {
+    return (
+      <Card className="gov-card">
+        <CardContent className="p-8 text-center">
+          <div className="space-y-4">
+            <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto" />
+            <h3 className="text-xl font-semibold text-gray-900">Aucune élection active</h3>
+            <p className="text-gray-600">
+              Veuillez sélectionner une élection active pour voir les résultats consolidés.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* En-tête avec informations de l'élection */}
+      <Card className="gov-card bg-blue-50 border-blue-200">
+        <CardHeader>
+          <CardTitle className="text-lg text-gov-gray">
+            Consolidation - {currentElection.title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <span className="font-medium text-gray-600">Type d'élection:</span>
+              <p className="text-gray-900">{currentElection.type}</p>
+            </div>
+            <div>
+              <span className="font-medium text-gray-600">Circonscription:</span>
+              <p className="text-gray-900">{currentElection.location}</p>
+            </div>
+            <div>
+              <span className="font-medium text-gray-600">Centres de vote:</span>
+              <p className="text-gray-900">{currentElection.centers}</p>
+            </div>
+            <div>
+              <span className="font-medium text-gray-600">Bureaux de vote:</span>
+              <p className="text-gray-900">{currentElection.bureaux}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Contrôles et filtres */}
       <Card className="gov-card">
         <CardHeader>
@@ -160,9 +236,8 @@ const ConsolidationSection = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Estuaire">Estuaire</SelectItem>
-                  <SelectItem value="Ogooué-Maritime">Ogooué-Maritime</SelectItem>
-                  <SelectItem value="Haut-Ogooué">Haut-Ogooué</SelectItem>
+                  <SelectItem value={currentElection.province}>{currentElection.province}</SelectItem>
+                  <SelectItem value={currentElection.commune}>{currentElection.commune}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -208,19 +283,23 @@ const ConsolidationSection = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">En Tête</p>
+                <p className="text-sm text-gray-600">Candidat en tête</p>
                 <p className="text-lg font-bold text-green-600">
-                  {consolidatedResults.candidates[0].name.split(' ')[0]}
+                  {consolidatedResults.candidates[0]?.name.split(' ')[0] || 'N/A'}
                 </p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-500" />
             </div>
-            <p className="text-sm text-gray-600 mt-1">
-              {consolidatedResults.candidates[0].votes.toLocaleString()} voix
-            </p>
-            <p className="text-xs text-gray-500">
-              {consolidatedResults.candidates[0].percentage}% des suffrages
-            </p>
+            {consolidatedResults.candidates[0] && (
+              <>
+                <p className="text-sm text-gray-600 mt-1">
+                  {consolidatedResults.candidates[0].votes.toLocaleString()} voix
+                </p>
+                <p className="text-xs text-gray-500">
+                  {consolidatedResults.candidates[0].percentage}% des suffrages
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -321,7 +400,7 @@ const ConsolidationSection = () => {
                       className="w-3 h-3 rounded-full" 
                       style={{ backgroundColor: candidate.color }}
                     ></div>
-                    <span className="text-sm font-medium">{candidate.name.split(' ')[0]}</span>
+                    <span className="text-sm font-medium">{candidate.name}</span>
                   </div>
                   <span className="text-sm text-gray-600">{candidate.percentage}%</span>
                 </div>
