@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import PublicHomePage from "./pages/PublicHomePage";
+import OrganizationSelector from "./pages/OrganizationSelector";
 import Dashboard from "./pages/Dashboard";
 import ElectionManagement from "./pages/ElectionManagement";
 import UserManagement from "./pages/UserManagement";
@@ -38,6 +39,7 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<PublicHomePage />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/organizations" element={<OrganizationSelector />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/elections" element={<ElectionManagement />} />
                 <Route path="/centers" element={<VotingCenters />} />
