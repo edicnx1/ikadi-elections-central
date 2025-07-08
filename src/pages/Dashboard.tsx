@@ -1,42 +1,36 @@
-
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   Calendar, 
   Users, 
   MapPin, 
   BarChart3,
   Clock,
-  Building
+  Building,
+  Plus
 } from 'lucide-react';
 import { Organization, FlexibleElection } from '@/types/election';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 const Dashboard = () => {
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(null);
   const [activeElection, setActiveElection] = useState<FlexibleElection | null>(null);
+  const { currentOrganization } = useOrganization();
 
   useEffect(() => {
-    // Récupérer l'organisation courante
-    const orgData = localStorage.getItem('currentOrganization');
-    console.log('Organization data from localStorage:', orgData);
-    if (orgData) {
-      const org = JSON.parse(orgData);
-      console.log('Parsed organization:', org);
-      setCurrentOrganization(org);
-    }
+    if (!currentOrganization) return;
 
     // Récupérer l'élection active pour cette organisation
     const electionsData = localStorage.getItem('elections');
-    if (electionsData && orgData) {
+    if (electionsData) {
       const elections: FlexibleElection[] = JSON.parse(electionsData);
-      const currentOrg = JSON.parse(orgData);
-      const active = elections.find(e => e.organizationId === currentOrg.id && e.isActive);
+      const active = elections.find(e => e.organizationId === currentOrganization.id && e.isActive);
       setActiveElection(active || null);
     }
-  }, []);
+  }, [currentOrganization]);
 
   useEffect(() => {
     if (!activeElection) return;
@@ -97,92 +91,102 @@ const Dashboard = () => {
   return (
     <Layout>
       <div className="space-y-4 sm:space-y-6 animate-fade-in">
-        {/* En-tête de l'Organisation - TOUJOURS VISIBLE */}
-        <div className="bg-white rounded-lg p-4 border shadow-sm">
+        {/* En-tête Organisation - Proéminent */}
+        <div className="gov-gradient rounded-xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-blue-100 rounded-lg">
+            <div className="flex items-center space-x-4">
+              <div className="p-4 bg-white/20 rounded-xl backdrop-blur-sm">
                 {currentOrganization.type === 'territorial' ? (
-                  <Building className="w-6 h-6 text-blue-600" />
+                  <Building className="w-8 h-8 text-white" />
                 ) : (
-                  <Users className="w-6 h-6 text-green-600" />
+                  <Users className="w-8 h-8 text-white" />
                 )}
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">{currentOrganization.name}</h1>
-                <div className="flex items-center space-x-2 mt-1">
-                  <Badge variant={currentOrganization.type === 'territorial' ? 'default' : 'secondary'}>
+                <h1 className="text-2xl sm:text-3xl font-bold">{currentOrganization.name}</h1>
+                <div className="flex items-center space-x-3 mt-2">
+                  <Badge 
+                    variant="secondary" 
+                    className="bg-white/20 text-white border-white/30 hover:bg-white/30"
+                  >
                     {currentOrganization.type === 'territorial' ? 'Élections Territoriales' : 'Élections Professionnelles'}
                   </Badge>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-blue-100 text-sm">
                     Créée le {new Date(currentOrganization.createdAt).toLocaleDateString('fr-FR')}
                   </span>
                 </div>
                 {currentOrganization.description && (
-                  <p className="text-gray-600 text-sm mt-1">{currentOrganization.description}</p>
+                  <p className="text-blue-100 mt-2 max-w-2xl">{currentOrganization.description}</p>
                 )}
               </div>
+            </div>
+            
+            {/* Actions rapides */}
+            <div className="hidden lg:flex flex-col space-y-2">
+              <Button 
+                variant="secondary" 
+                size="sm"
+                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nouvelle Élection
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Bannière Élection Active ou Invitation à Créer */}
+        {/* Élection Active ou Invitation à Créer */}
         {activeElection ? (
-          <div className="gov-gradient rounded-lg p-4 sm:p-6 text-white">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2 text-blue-100">
-                  <Calendar className="w-4 h-4" />
-                  <span className="text-sm">Élection Active</span>
+          <Card className="border-2 border-blue-200 bg-blue-50/50">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Calendar className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl text-blue-900">{activeElection.title}</CardTitle>
+                    <p className="text-blue-600 text-sm">
+                      {new Date(activeElection.date).toLocaleDateString('fr-FR', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
                 </div>
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
-                  {activeElection.title}
-                </h2>
-                <p className="text-blue-100 text-sm sm:text-base">
-                  {new Date(activeElection.date).toLocaleDateString('fr-FR', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-                <Badge variant="secondary" className="bg-white text-gov-blue font-medium">
+                <Badge variant="outline" className="border-blue-300 text-blue-700">
                   {activeElection.status}
                 </Badge>
               </div>
-              
+            </CardHeader>
+            <CardContent>
               {/* Compte à rebours */}
-              <div className="flex items-center space-x-2 text-white">
+              <div className="flex items-center justify-center space-x-4 py-4">
                 <div className="text-center">
-                  <div className="bg-white/20 rounded-lg p-2 min-w-[60px]">
-                    <div className="text-2xl font-bold">{countdown.days.toString().padStart(2, '0')}</div>
-                    <div className="text-xs text-blue-100">Jours</div>
+                  <div className="bg-blue-100 rounded-lg p-3 min-w-[70px]">
+                    <div className="text-2xl font-bold text-blue-600">{countdown.days.toString().padStart(2, '0')}</div>
+                    <div className="text-xs text-blue-500">Jours</div>
                   </div>
                 </div>
-                <div className="text-2xl font-bold">:</div>
+                <div className="text-2xl font-bold text-blue-300">:</div>
                 <div className="text-center">
-                  <div className="bg-white/20 rounded-lg p-2 min-w-[60px]">
-                    <div className="text-2xl font-bold">{countdown.hours.toString().padStart(2, '0')}</div>
-                    <div className="text-xs text-blue-100">Heures</div>
+                  <div className="bg-blue-100 rounded-lg p-3 min-w-[70px]">
+                    <div className="text-2xl font-bold text-blue-600">{countdown.hours.toString().padStart(2, '0')}</div>
+                    <div className="text-xs text-blue-500">Heures</div>
                   </div>
                 </div>
-                <div className="text-2xl font-bold">:</div>
+                <div className="text-2xl font-bold text-blue-300">:</div>
                 <div className="text-center">
-                  <div className="bg-white/20 rounded-lg p-2 min-w-[60px]">
-                    <div className="text-2xl font-bold">{countdown.minutes.toString().padStart(2, '0')}</div>
-                    <div className="text-xs text-blue-100">Min</div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold">:</div>
-                <div className="text-center">
-                  <div className="bg-white/20 rounded-lg p-2 min-w-[60px]">
-                    <div className="text-2xl font-bold">{countdown.seconds.toString().padStart(2, '0')}</div>
-                    <div className="text-xs text-blue-100">Sec</div>
+                  <div className="bg-blue-100 rounded-lg p-3 min-w-[70px]">
+                    <div className="text-2xl font-bold text-blue-600">{countdown.minutes.toString().padStart(2, '0')}</div>
+                    <div className="text-xs text-blue-500">Min</div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         ) : (
           <Card className="text-center py-12 border-dashed border-2">
             <CardContent>
@@ -191,11 +195,12 @@ const Dashboard = () => {
                 Aucune élection configurée
               </h3>
               <p className="text-gray-600 mb-6">
-                Créez votre première élection pour {currentOrganization.name}
+                Créez votre première élection pour <strong>{currentOrganization.name}</strong>
               </p>
-              <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-                + Créer une élection
-              </button>
+              <Button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                <Plus className="w-4 h-4 mr-2" />
+                Créer une élection
+              </Button>
             </CardContent>
           </Card>
         )}
