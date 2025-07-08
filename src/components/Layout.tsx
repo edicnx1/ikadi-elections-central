@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { Button } from '@/components/ui/button';
 import { 
   Home, 
@@ -17,7 +18,8 @@ import {
   AlertTriangle,
   Info,
   Check,
-  Trash2
+  Trash2,
+  MapPin
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
@@ -26,7 +28,6 @@ import { useNotifications } from '@/contexts/NotificationContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -47,6 +48,7 @@ const getNotificationIcon = (type: 'info' | 'success' | 'warning' | 'error') => 
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
+  const { currentOrganization } = useOrganization();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -59,14 +61,36 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     removeNotification,
   } = useNotifications();
 
-  const menuItems = [
-    { icon: Home, label: 'Tableau de Bord', path: '/dashboard' },
-    { icon: Calendar, label: 'Élections', path: '/elections' },
-    { icon: Users, label: 'Gestion Utilisateurs', path: '/users' },
-    { icon: BarChart3, label: 'Centralisation Résultats', path: '/results' },
-    { icon: Megaphone, label: 'Gestion Campagne', path: '/campaign' },
-    { icon: MessageSquare, label: 'Conversations', path: '/conversations' },
-  ];
+  // Menu items adaptés au contexte de l'organisation
+  const getMenuItems = () => {
+    const baseItems = [
+      { icon: Home, label: 'Tableau de Bord', path: '/dashboard' },
+      { icon: Calendar, label: 'Élections', path: '/elections' },
+    ];
+
+    // Menu contextuel selon le type d'organisation
+    if (currentOrganization?.type === 'territorial') {
+      baseItems.push(
+        { icon: MapPin, label: 'Centres de Vote', path: '/centers' }
+      );
+    } else if (currentOrganization?.type === 'professional') {
+      baseItems.push(
+        { icon: MapPin, label: 'Lieux de Vote', path: '/centers' }
+      );
+    }
+
+    // Menus universels
+    baseItems.push(
+      { icon: Users, label: 'Gestion Utilisateurs', path: '/users' },
+      { icon: BarChart3, label: 'Centralisation Résultats', path: '/results' },
+      { icon: Megaphone, label: 'Gestion Campagne', path: '/campaign' },
+      { icon: MessageSquare, label: 'Conversations', path: '/conversations' }
+    );
+
+    return baseItems;
+  };
+
+  const menuItems = getMenuItems();
 
   const handleLogout = () => {
     logout();
@@ -98,7 +122,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {(sidebarOpen || isMobile) && (
               <div className="min-w-0">
                 <h1 className="font-bold text-lg truncate">iKadi</h1>
-                <p className="text-xs text-blue-200 truncate">Gestion Électorale</p>
+                <p className="text-xs text-blue-200 truncate">
+                  {currentOrganization?.type === 'territorial' ? 'Élections Territoriales' : 
+                   currentOrganization?.type === 'professional' ? 'Élections Professionnelles' : 
+                   'Gestion Électorale'}
+                </p>
               </div>
             )}
           </div>
@@ -134,6 +162,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <p className="text-blue-200 text-xs truncate capitalize">
                 {user?.role?.replace('-', ' ')}
               </p>
+              {currentOrganization && (
+                <p className="text-blue-200 text-xs truncate mt-1">
+                  {currentOrganization.name}
+                </p>
+              )}
             </div>
           )}
           <Button

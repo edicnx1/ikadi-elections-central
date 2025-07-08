@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import { OrganizationProvider } from "./contexts/OrganizationContext";
 import PublicHomePage from "./pages/PublicHomePage";
 import OrganizationSelector from "./pages/OrganizationSelector";
 import Dashboard from "./pages/Dashboard";
@@ -34,26 +35,28 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <NotificationProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<PublicHomePage />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/organizations" element={<OrganizationSelector />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/elections" element={<ElectionManagement />} />
-                <Route path="/centers" element={<VotingCenters />} />
-                <Route path="/users" element={<UserManagement />} />
-                <Route path="/results" element={<Results />} />
-                <Route path="/campaign" element={<CampaignManagement />} />
-                <Route path="/campaign/operation/:id" element={<OperationDetail />} />
-                <Route path="/conversations" element={<Conversations />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-            <Toaster />
-            <Sonner />
-          </NotificationProvider>
+          <OrganizationProvider>
+            <NotificationProvider>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<PublicHomePage />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/organizations" element={<OrganizationSelector />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/elections" element={<ElectionManagement />} />
+                  <Route path="/centers" element={<VotingCenters />} />
+                  <Route path="/users" element={<UserManagement />} />
+                  <Route path="/results" element={<Results />} />
+                  <Route path="/campaign" element={<CampaignManagement />} />
+                  <Route path="/campaign/operation/:id" element={<OperationDetail />} />
+                  <Route path="/conversations" element={<Conversations />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+              <Toaster />
+              <Sonner />
+            </NotificationProvider>
+          </OrganizationProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

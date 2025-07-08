@@ -21,15 +21,19 @@ const Dashboard = () => {
   useEffect(() => {
     // Récupérer l'organisation courante
     const orgData = localStorage.getItem('currentOrganization');
+    console.log('Organization data from localStorage:', orgData);
     if (orgData) {
-      setCurrentOrganization(JSON.parse(orgData));
+      const org = JSON.parse(orgData);
+      console.log('Parsed organization:', org);
+      setCurrentOrganization(org);
     }
 
-    // Récupérer l'élection active
+    // Récupérer l'élection active pour cette organisation
     const electionsData = localStorage.getItem('elections');
-    if (electionsData) {
+    if (electionsData && orgData) {
       const elections: FlexibleElection[] = JSON.parse(electionsData);
-      const active = elections.find(e => e.isActive);
+      const currentOrg = JSON.parse(orgData);
+      const active = elections.find(e => e.organizationId === currentOrg.id && e.isActive);
       setActiveElection(active || null);
     }
   }, []);
@@ -58,7 +62,7 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [activeElection]);
 
-  // Données par défaut si pas d'élection active - avec vérifications de sécurité
+  // Données adaptées au contexte de l'organisation
   const dashboardData = {
     votersRegistered: {
       total: activeElection?.voters || 0,
@@ -93,26 +97,36 @@ const Dashboard = () => {
   return (
     <Layout>
       <div className="space-y-4 sm:space-y-6 animate-fade-in">
-        {/* Organization Header */}
-        <div className="bg-white rounded-lg p-4 border">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              {currentOrganization.type === 'territorial' ? (
-                <Building className="w-6 h-6 text-blue-600" />
-              ) : (
-                <Users className="w-6 h-6 text-green-600" />
-              )}
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">{currentOrganization.name}</h2>
-              <Badge variant={currentOrganization.type === 'territorial' ? 'default' : 'secondary'}>
-                {currentOrganization.type === 'territorial' ? 'Élections Territoriales' : 'Élections Professionnelles'}
-              </Badge>
+        {/* En-tête de l'Organisation - TOUJOURS VISIBLE */}
+        <div className="bg-white rounded-lg p-4 border shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                {currentOrganization.type === 'territorial' ? (
+                  <Building className="w-6 h-6 text-blue-600" />
+                ) : (
+                  <Users className="w-6 h-6 text-green-600" />
+                )}
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">{currentOrganization.name}</h1>
+                <div className="flex items-center space-x-2 mt-1">
+                  <Badge variant={currentOrganization.type === 'territorial' ? 'default' : 'secondary'}>
+                    {currentOrganization.type === 'territorial' ? 'Élections Territoriales' : 'Élections Professionnelles'}
+                  </Badge>
+                  <span className="text-sm text-gray-500">
+                    Créée le {new Date(currentOrganization.createdAt).toLocaleDateString('fr-FR')}
+                  </span>
+                </div>
+                {currentOrganization.description && (
+                  <p className="text-gray-600 text-sm mt-1">{currentOrganization.description}</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Main Election Banner */}
+        {/* Bannière Élection Active ou Invitation à Créer */}
         {activeElection ? (
           <div className="gov-gradient rounded-lg p-4 sm:p-6 text-white">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -121,9 +135,9 @@ const Dashboard = () => {
                   <Calendar className="w-4 h-4" />
                   <span className="text-sm">Élection Active</span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
                   {activeElection.title}
-                </h1>
+                </h2>
                 <p className="text-blue-100 text-sm sm:text-base">
                   {new Date(activeElection.date).toLocaleDateString('fr-FR', {
                     weekday: 'long',
@@ -137,7 +151,7 @@ const Dashboard = () => {
                 </Badge>
               </div>
               
-              {/* Countdown Display */}
+              {/* Compte à rebours */}
               <div className="flex items-center space-x-2 text-white">
                 <div className="text-center">
                   <div className="bg-white/20 rounded-lg p-2 min-w-[60px]">
@@ -170,20 +184,23 @@ const Dashboard = () => {
             </div>
           </div>
         ) : (
-          <Card className="text-center py-12">
+          <Card className="text-center py-12 border-dashed border-2">
             <CardContent>
               <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Aucune élection active
+                Aucune élection configurée
               </h3>
               <p className="text-gray-600 mb-6">
-                Configurez votre première élection pour commencer
+                Créez votre première élection pour {currentOrganization.name}
               </p>
+              <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                + Créer une élection
+              </button>
             </CardContent>
           </Card>
         )}
 
-        {/* Stats Cards - Adaptées au contexte */}
+        {/* Cartes de statistiques contextuelles */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {/* Électeurs */}
           <Card className="gov-card">
@@ -259,7 +276,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Contenu conditionnel selon le type d'organisation */}
+        {/* Section contextuelle selon le type d'organisation */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <Card className="gov-card">
             <CardHeader>
@@ -269,29 +286,31 @@ const Dashboard = () => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
                   <span className="text-sm">
-                    {currentOrganization.type === 'territorial' ? 'Nouveau centre ajouté' : 'Nouveau lieu de vote ajouté'}
+                    Organisation "{currentOrganization.name}" créée
                   </span>
-                  <span className="text-xs text-gray-500">Il y a 2h</span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(currentOrganization.createdAt).toLocaleDateString('fr-FR')}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
                   <span className="text-sm">
-                    {currentOrganization.type === 'territorial' ? 'PV validé - Centre Nord' : 'Feuille validée - Siège Social'}
+                    {currentOrganization.type === 'territorial' ? 'Configuration territoriale initialisée' : 'Configuration professionnelle initialisée'}
                   </span>
-                  <span className="text-xs text-gray-500">Il y a 4h</span>
+                  <span className="text-xs text-gray-500">Il y a 1h</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <span className="text-sm">Utilisateur créé</span>
-                  <span className="text-xs text-gray-500">Il y a 6h</span>
+                  <span className="text-sm">Utilisateur administrateur configuré</span>
+                  <span className="text-xs text-gray-500">Il y a 2h</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Affichage conditionnel : Carte géographique OU Répartition par département */}
+          {/* Affichage conditionnel selon le type */}
           <Card className="gov-card">
             <CardHeader>
               <CardTitle className="text-gov-gray">
-                {currentOrganization.type === 'territorial' ? 'Couverture Géographique' : 'Répartition par Département'}
+                {currentOrganization.type === 'territorial' ? 'Configuration Territoriale' : 'Configuration Professionnelle'}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -299,9 +318,12 @@ const Dashboard = () => {
                 <div className="space-y-3">
                   <div className="flex items-start space-x-3 p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
                     <div className="flex-1">
-                      <p className="text-sm font-medium">Couverture territoriale</p>
+                      <p className="text-sm font-medium">Prêt pour élections territoriales</p>
                       <p className="text-xs text-gray-600 mt-1">
-                        {activeElection?.hierarchy ? `${activeElection.hierarchy.level1} > ${activeElection.hierarchy.level2}` : 'Configurez une élection'}
+                        Hiérarchie: Province → Ville → Arrondissement
+                      </p>
+                      <p className="text-xs text-blue-600 mt-2">
+                        ✓ Structure géographique configurée
                       </p>
                     </div>
                   </div>
@@ -310,9 +332,12 @@ const Dashboard = () => {
                 <div className="space-y-3">
                   <div className="flex items-start space-x-3 p-3 bg-green-50 border-l-4 border-green-400 rounded">
                     <div className="flex-1">
-                      <p className="text-sm font-medium">Répartition des électeurs</p>
+                      <p className="text-sm font-medium">Prêt pour élections professionnelles</p>
                       <p className="text-xs text-gray-600 mt-1">
-                        {activeElection?.hierarchy ? `Structure: ${activeElection.hierarchy.level1} > ${activeElection.hierarchy.level2}` : 'Configurez une élection'}
+                        Hiérarchie: Direction → Département → Service
+                      </p>
+                      <p className="text-xs text-green-600 mt-2">
+                        ✓ Structure organisationnelle configurée
                       </p>
                     </div>
                   </div>

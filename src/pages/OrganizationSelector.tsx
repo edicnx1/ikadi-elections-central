@@ -6,12 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Building, Users, Calendar } from 'lucide-react';
 import { Organization } from '@/types/election';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import OrganizationWizard from '@/components/organizations/OrganizationWizard';
 import { useNavigate } from 'react-router-dom';
 
 const OrganizationSelector = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [showWizard, setShowWizard] = useState(false);
+  const { setCurrentOrganization } = useOrganization();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,14 +24,14 @@ const OrganizationSelector = () => {
       
       // Si une seule organisation, rediriger automatiquement
       if (orgs.length === 1) {
-        localStorage.setItem('currentOrganization', JSON.stringify(orgs[0]));
+        setCurrentOrganization(orgs[0]);
         navigate('/dashboard');
       }
     }
-  }, [navigate]);
+  }, [navigate, setCurrentOrganization]);
 
   const handleSelectOrganization = (org: Organization) => {
-    localStorage.setItem('currentOrganization', JSON.stringify(org));
+    setCurrentOrganization(org);
     navigate('/dashboard');
   };
 
