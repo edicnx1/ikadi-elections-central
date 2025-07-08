@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Users, TrendingUp } from 'lucide-react';
 
 const PublicHomePage = () => {
-  // Mock data for public results
+  // Mock data for public results - Seulement pour les élections territoriales publiques
   const mockResults = {
     election: "Élections Législatives 2024",
     date: "15 Décembre 2024",
@@ -31,13 +31,13 @@ const PublicHomePage = () => {
               </div>
               <div>
                 <h1 className="text-white font-bold text-2xl">iKadi</h1>
-                <p className="text-blue-100 text-sm">République Gabonaise - Élections Transparentes</p>
+                <p className="text-blue-100 text-sm">Plateforme de Gestion Électorale Universelle</p>
               </div>
             </div>
             
             <Link to="/login">
               <Button className="bg-white text-gov-blue hover:bg-blue-50">
-                Accès Directeur de Campagne
+                Accès Organisateur
               </Button>
             </Link>
           </div>
@@ -52,6 +52,9 @@ const PublicHomePage = () => {
           </h2>
           <p className="text-blue-100 text-lg max-w-2xl mx-auto">
             Suivez les résultats des élections en direct avec transparence et sécurité
+          </p>
+          <p className="text-blue-200 text-sm mt-2">
+            * Page publique disponible uniquement pour les élections territoriales
           </p>
         </div>
 
@@ -152,8 +155,8 @@ const PublicHomePage = () => {
       <footer className="bg-white/10 backdrop-blur-sm border-t border-white/20 mt-12">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center text-blue-100">
-            <p className="mb-2">© 2024 iKadi - République Gabonaise</p>
-            <p className="text-sm">Système de Gestion Électorale Sécurisé et Transparent</p>
+            <p className="mb-2">© 2024 iKadi - Plateforme de Gestion Électorale</p>
+            <p className="text-sm">Système Sécurisé et Transparent pour Tous Types d'Élections</p>
           </div>
         </div>
       </footer>
