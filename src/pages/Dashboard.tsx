@@ -58,17 +58,17 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [activeElection]);
 
-  // Données par défaut si pas d'élection active
+  // Données par défaut si pas d'élection active - avec vérifications de sécurité
   const dashboardData = {
     votersRegistered: {
       total: activeElection?.voters || 0,
       trend: "+2.3% sur 30 jours"
     },
     infrastructure: {
-      centers: activeElection?.votingLocations.length || 0,
-      bureaux: activeElection?.votingLocations.reduce((sum, loc) => sum + loc.bureaux.length, 0) || 0,
-      average: activeElection?.votingLocations.length ? 
-        (activeElection.votingLocations.reduce((sum, loc) => sum + loc.bureaux.length, 0) / activeElection.votingLocations.length).toFixed(1) : 0
+      centers: activeElection?.votingLocations?.length || 0,
+      bureaux: activeElection?.votingLocations?.reduce((sum, loc) => sum + (loc.bureaux?.length || 0), 0) || 0,
+      average: activeElection?.votingLocations?.length ? 
+        ((activeElection.votingLocations.reduce((sum, loc) => sum + (loc.bureaux?.length || 0), 0)) / activeElection.votingLocations.length).toFixed(1) : "0"
     },
     pvsWaiting: {
       count: 37,
@@ -301,7 +301,7 @@ const Dashboard = () => {
                     <div className="flex-1">
                       <p className="text-sm font-medium">Couverture territoriale</p>
                       <p className="text-xs text-gray-600 mt-1">
-                        {activeElection ? `${activeElection.hierarchy.level1} > ${activeElection.hierarchy.level2}` : 'Configurez une élection'}
+                        {activeElection?.hierarchy ? `${activeElection.hierarchy.level1} > ${activeElection.hierarchy.level2}` : 'Configurez une élection'}
                       </p>
                     </div>
                   </div>
@@ -312,7 +312,7 @@ const Dashboard = () => {
                     <div className="flex-1">
                       <p className="text-sm font-medium">Répartition des électeurs</p>
                       <p className="text-xs text-gray-600 mt-1">
-                        {activeElection ? `Structure: ${activeElection.hierarchy.level1} > ${activeElection.hierarchy.level2}` : 'Configurez une élection'}
+                        {activeElection?.hierarchy ? `Structure: ${activeElection.hierarchy.level1} > ${activeElection.hierarchy.level2}` : 'Configurez une élection'}
                       </p>
                     </div>
                   </div>
