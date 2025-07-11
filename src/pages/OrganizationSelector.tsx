@@ -21,14 +21,8 @@ const OrganizationSelector = () => {
     if (savedOrganizations) {
       const orgs = JSON.parse(savedOrganizations);
       setOrganizations(orgs);
-      
-      // Si une seule organisation, rediriger automatiquement
-      if (orgs.length === 1) {
-        setCurrentOrganization(orgs[0]);
-        navigate('/dashboard');
-      }
     }
-  }, [navigate, setCurrentOrganization]);
+  }, []);
 
   const handleSelectOrganization = (org: Organization) => {
     setCurrentOrganization(org);
@@ -50,8 +44,9 @@ const OrganizationSelector = () => {
     localStorage.setItem('organizations', JSON.stringify(updatedOrgs));
     setShowWizard(false);
     
-    // Sélectionner automatiquement la nouvelle organisation
-    handleSelectOrganization(newOrg);
+    // Sélectionner automatiquement la nouvelle organisation et aller au dashboard
+    setCurrentOrganization(newOrg);
+    navigate('/dashboard');
   };
 
   return (

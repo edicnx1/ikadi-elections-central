@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +11,8 @@ import {
   BarChart3,
   Clock,
   Building,
-  Plus
+  Plus,
+  Lightbulb
 } from 'lucide-react';
 import { Organization, FlexibleElection } from '@/types/election';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -18,10 +20,18 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 const Dashboard = () => {
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [activeElection, setActiveElection] = useState<FlexibleElection | null>(null);
+  const [isNewUser, setIsNewUser] = useState(false);
   const { currentOrganization } = useOrganization();
 
   useEffect(() => {
     if (!currentOrganization) return;
+
+    // Vérifier si c'est un nouvel utilisateur (organisation créée récemment)
+    const orgCreationTime = new Date(currentOrganization.createdAt).getTime();
+    const now = new Date().getTime();
+    const timeDiff = now - orgCreationTime;
+    const isRecent = timeDiff < 5 * 60 * 1000; // 5 minutes
+    setIsNewUser(isRecent);
 
     // Récupérer l'élection active pour cette organisation
     const electionsData = localStorage.getItem('elections');
@@ -91,6 +101,40 @@ const Dashboard = () => {
   return (
     <Layout>
       <div className="space-y-4 sm:space-y-6 animate-fade-in">
+        {/* Message de bienvenue pour nouveaux utilisateurs */}
+        {isNewUser && (
+          <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardContent className="p-6">
+              <div className="flex items-start space-x-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Lightbulb className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                    Bienvenue dans votre environnement électoral !
+                  </h3>
+                  <p className="text-blue-800 text-sm mb-3">
+                    Votre organisation "<strong>{currentOrganization.name}</strong>" est maintenant configurée pour les{' '}
+                    <strong>{currentOrganization.type === 'territorial' ? 'élections territoriales' : 'élections professionnelles'}</strong>.
+                    L'application s'est automatiquement adaptée à votre contexte.
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <Badge variant="outline" className="border-blue-300 text-blue-700">
+                      ✓ Structure hiérarchique configurée
+                    </Badge>
+                    <Badge variant="outline" className="border-blue-300 text-blue-700">
+                      ✓ Interface adaptée au contexte
+                    </Badge>
+                    <Badge variant="outline" className="border-blue-300 text-blue-700">
+                      ✓ Prêt pour créer des élections
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* En-tête Organisation - Proéminent */}
         <div className="gov-gradient rounded-xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between">
