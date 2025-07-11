@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -280,7 +279,7 @@ const Dashboard = () => {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Compte à rebours */}
+              {/* Compte à rebours avec secondes */}
               <div className="flex items-center justify-center space-x-4 py-4">
                 <div className="text-center">
                   <div className="bg-blue-100 rounded-lg p-3 min-w-[70px]">
@@ -300,6 +299,13 @@ const Dashboard = () => {
                   <div className="bg-blue-100 rounded-lg p-3 min-w-[70px]">
                     <div className="text-2xl font-bold text-blue-600">{countdown.minutes.toString().padStart(2, '0')}</div>
                     <div className="text-xs text-blue-500">Min</div>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-blue-300">:</div>
+                <div className="text-center">
+                  <div className="bg-blue-100 rounded-lg p-3 min-w-[70px]">
+                    <div className="text-2xl font-bold text-blue-600">{countdown.seconds.toString().padStart(2, '0')}</div>
+                    <div className="text-xs text-blue-500">Sec</div>
                   </div>
                 </div>
               </div>
@@ -489,11 +495,12 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Modal du wizard d'élection */}
+      {/* Modal du wizard d'élection avec type d'organisation */}
       {showElectionWizard && (
         <ElectionWizard
           onClose={() => setShowElectionWizard(false)}
           onSubmit={handleElectionCreated}
+          organizationType={currentOrganization?.type}
         />
       )}
     </Layout>

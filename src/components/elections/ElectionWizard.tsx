@@ -18,9 +18,10 @@ interface Candidate {
 interface ElectionWizardProps {
   onClose: () => void;
   onSubmit: (election: any) => void;
+  organizationType?: 'territorial' | 'professional';
 }
 
-const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) => {
+const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit, organizationType = 'territorial' }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     // Étape 1
@@ -31,11 +32,15 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
     budget: 0,
     voteGoal: 0,
     
-    // Étape 2
+    // Étape 2 - Dynamique selon le type d'organisation
     province: '',
     department: '',
     commune: '',
     arrondissement: '',
+    // Pour les élections professionnelles
+    company: '',
+    direction: '',
+    service: '',
     
     // Étape 3
     candidates: [] as Candidate[],
@@ -54,9 +59,9 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
 
   const steps = [
     'Informations Générales',
-    'Circonscription Électorale',
+    organizationType === 'territorial' ? 'Circonscription Électorale' : 'Périmètre Professionnel',
     'Candidats',
-    'Centres et Bureaux',
+    organizationType === 'territorial' ? 'Centres et Bureaux' : 'Lieux de Vote',
     'Récapitulatif'
   ];
 
@@ -106,79 +111,62 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
       date: formData.date,
       status: 'À venir',
       statusColor: 'blue',
-      description: `Circonscription ${formData.commune}, ${formData.arrondissement}`,
+      description: organizationType === 'territorial' 
+        ? `Circonscription ${formData.commune}, ${formData.arrondissement}`
+        : `${formData.company} - ${formData.direction}`,
       voters: formData.totalVoters,
       candidates: formData.candidates.length,
       centers: formData.totalCenters,
       bureaux: formData.totalCenters * formData.averageBureaux,
-      location: `${formData.commune}, ${formData.arrondissement}`,
+      location: organizationType === 'territorial'
+        ? `${formData.commune}, ${formData.arrondissement}`
+        : `${formData.company}`,
       type: formData.type,
       seatsAvailable: formData.seatsAvailable,
       budget: formData.budget,
       voteGoal: formData.voteGoal,
+      // Données territoriales
       province: formData.province,
       department: formData.department,
       commune: formData.commune,
       arrondissement: formData.arrondissement,
-      candidatesList: formData.candidates, // Ajouter la liste complète des candidats
-      isActive: true // Marquer comme élection active par défaut
+      // Données professionnelles
+      company: formData.company,
+      direction: formData.direction,
+      service: formData.service,
+      candidatesList: formData.candidates,
+      isActive: true,
+      organizationType: organizationType
     };
     
     onSubmit(election);
   };
 
   const canProceed = () => {
-    let canProceedResult = false;
-    
     switch (currentStep) {
       case 1:
-        // Vérifie que les champs requis sont remplis
-        canProceedResult = formData.name.trim() !== '' && 
-                         formData.type.trim() !== '' && 
-                         formData.date.trim() !== '';
-        console.log('Étape 1 - Peut continuer:', canProceedResult, {
-          name: formData.name,
-          type: formData.type,
-          date: formData.date
-        });
-        break;
+        return formData.name.trim() !== '' && 
+               formData.type.trim() !== '' && 
+               formData.date.trim() !== '';
       case 2:
-        // Vérifie que la province et la commune sont renseignées
-        canProceedResult = formData.province.trim() !== '' && 
-                         formData.commune.trim() !== '';
-        console.log('Étape 2 - Peut continuer:', canProceedResult, {
-          province: formData.province,
-          commune: formData.commune
-        });
-        break;
+        if (organizationType === 'territorial') {
+          return formData.province.trim() !== '' && 
+                 formData.commune.trim() !== '';
+        } else {
+          return formData.company.trim() !== '' && 
+                 formData.direction.trim() !== '';
+        }
       case 3:
-        // Les candidats sont optionnels, donc on peut toujours passer à l'étape suivante
-        canProceedResult = true;
-        console.log('Étape 3 - Peut continuer: true (optionnel)');
-        break;
+        return true; // Candidats optionnels
       case 4:
-        // Vérifie que les nombres sont strictement positifs
-        canProceedResult = formData.totalCenters > 0 && 
-                         formData.averageBureaux > 0 && 
-                         formData.totalVoters > 0;
-        console.log('Étape 4 - Peut continuer:', canProceedResult, {
-          totalCenters: formData.totalCenters,
-          averageBureaux: formData.averageBureaux,
-          totalVoters: formData.totalVoters
-        });
-        break;
+        return formData.totalCenters > 0 && 
+               formData.averageBureaux > 0 && 
+               formData.totalVoters > 0;
       case 5:
-        // Dernière étape, toujours possible de valider
-        canProceedResult = true;
-        console.log('Étape 5 - Peut continuer: true (dernière étape)');
-        break;
+        return true;
       default:
-        canProceedResult = false;
-        console.log('Étape inconnue - Peut continuer: false');
+        return false;
     }
-    
-    console.log(`[canProceed] Étape ${currentStep}:`, canProceedResult);
-    return canProceedResult;
   };
 
   const renderStep = () => {
@@ -192,7 +180,10 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Ex: Législatives 2023 - Siège unique Moanda"
+                placeholder={organizationType === 'territorial' 
+                  ? "Ex: Législatives 2023 - Siège unique Moanda"
+                  : "Ex: Élection CSE 2024 - Direction Générale"
+                }
               />
             </div>
             
@@ -203,9 +194,20 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
                   <SelectValue placeholder="Sélectionner le type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Législatives">Législatives</SelectItem>
-                  <SelectItem value="Locales">Locales (Départementales / Municipales)</SelectItem>
-                  <SelectItem value="Présidentielle">Présidentielle</SelectItem>
+                  {organizationType === 'territorial' ? (
+                    <>
+                      <SelectItem value="Législatives">Législatives</SelectItem>
+                      <SelectItem value="Locales">Locales (Départementales / Municipales)</SelectItem>
+                      <SelectItem value="Présidentielle">Présidentielle</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="CSE">CSE (Comité Social et Économique)</SelectItem>
+                      <SelectItem value="Délégués du Personnel">Délégués du Personnel</SelectItem>
+                      <SelectItem value="Représentants Syndicaux">Représentants Syndicaux</SelectItem>
+                      <SelectItem value="Conseil d'Administration">Conseil d'Administration</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -256,59 +258,95 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
         );
         
       case 2:
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="province">Province</Label>
-              <Select value={formData.province} onValueChange={(value) => setFormData({ ...formData, province: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner la province" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Estuaire">Estuaire</SelectItem>
-                  <SelectItem value="Haut-Ogooué">Haut-Ogooué</SelectItem>
-                  <SelectItem value="Moyen-Ogooué">Moyen-Ogooué</SelectItem>
-                  <SelectItem value="Ngounié">Ngounié</SelectItem>
-                  <SelectItem value="Nyanga">Nyanga</SelectItem>
-                  <SelectItem value="Ogooué-Ivindo">Ogooué-Ivindo</SelectItem>
-                  <SelectItem value="Ogooué-Lolo">Ogooué-Lolo</SelectItem>
-                  <SelectItem value="Ogooué-Maritime">Ogooué-Maritime</SelectItem>
-                  <SelectItem value="Woleu-Ntem">Woleu-Ntem</SelectItem>
-                </SelectContent>
-              </Select>
+        if (organizationType === 'territorial') {
+          return (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="province">Province</Label>
+                <Select value={formData.province} onValueChange={(value) => setFormData({ ...formData, province: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner la province" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Estuaire">Estuaire</SelectItem>
+                    <SelectItem value="Haut-Ogooué">Haut-Ogooué</SelectItem>
+                    <SelectItem value="Moyen-Ogooué">Moyen-Ogooué</SelectItem>
+                    <SelectItem value="Ngounié">Ngounié</SelectItem>
+                    <SelectItem value="Nyanga">Nyanga</SelectItem>
+                    <SelectItem value="Ogooué-Ivindo">Ogooué-Ivindo</SelectItem>
+                    <SelectItem value="Ogooué-Lolo">Ogooué-Lolo</SelectItem>
+                    <SelectItem value="Ogooué-Maritime">Ogooué-Maritime</SelectItem>
+                    <SelectItem value="Woleu-Ntem">Woleu-Ntem</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="department">Département</Label>
+                <Input
+                  id="department"
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  placeholder="Ex: Lemboumbi-Leyou"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="commune">Commune / Canton / District</Label>
+                <Input
+                  id="commune"
+                  value={formData.commune}
+                  onChange={(e) => setFormData({ ...formData, commune: e.target.value })}
+                  placeholder="Ex: Commune de Moanda"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="arrondissement">Arrondissement / Siège</Label>
+                <Input
+                  id="arrondissement"
+                  value={formData.arrondissement}
+                  onChange={(e) => setFormData({ ...formData, arrondissement: e.target.value })}
+                  placeholder="Ex: 1er Arrondissement"
+                />
+              </div>
             </div>
-            
-            <div>
-              <Label htmlFor="department">Département</Label>
-              <Input
-                id="department"
-                value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                placeholder="Ex: Lemboumbi-Leyou"
-              />
+          );
+        } else {
+          return (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="company">Entreprise / Organisation</Label>
+                <Input
+                  id="company"
+                  value={formData.company}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  placeholder="Ex: ACME Corporation"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="direction">Direction</Label>
+                <Input
+                  id="direction"
+                  value={formData.direction}
+                  onChange={(e) => setFormData({ ...formData, direction: e.target.value })}
+                  placeholder="Ex: Direction Générale"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="service">Service / Département</Label>
+                <Input
+                  id="service"
+                  value={formData.service}
+                  onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+                  placeholder="Ex: Ressources Humaines"
+                />
+              </div>
             </div>
-            
-            <div>
-              <Label htmlFor="commune">Commune / Canton / District</Label>
-              <Input
-                id="commune"
-                value={formData.commune}
-                onChange={(e) => setFormData({ ...formData, commune: e.target.value })}
-                placeholder="Ex: Commune de Moanda"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="arrondissement">Arrondissement / Siège</Label>
-              <Input
-                id="arrondissement"
-                value={formData.arrondissement}
-                onChange={(e) => setFormData({ ...formData, arrondissement: e.target.value })}
-                placeholder="Ex: 1er Arrondissement"
-              />
-            </div>
-          </div>
-        );
+          );
+        }
         
       case 3:
         return (
@@ -327,12 +365,14 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
                 </div>
                 
                 <div>
-                  <Label htmlFor="candidateParty">Parti politique / Appartenance</Label>
+                  <Label htmlFor="candidateParty">
+                    {organizationType === 'territorial' ? 'Parti politique / Appartenance' : 'Liste / Syndicat'}
+                  </Label>
                   <Input
                     id="candidateParty"
                     value={currentCandidate.party}
                     onChange={(e) => setCurrentCandidate({ ...currentCandidate, party: e.target.value })}
-                    placeholder="Nom du parti"
+                    placeholder={organizationType === 'territorial' ? 'Nom du parti' : 'Nom de la liste ou du syndicat'}
                   />
                 </div>
               </div>
@@ -344,7 +384,9 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
                   checked={currentCandidate.isOurCandidate}
                   onChange={(e) => setCurrentCandidate({ ...currentCandidate, isOurCandidate: e.target.checked })}
                 />
-                <Label htmlFor="ourCandidate">C'est notre candidat</Label>
+                <Label htmlFor="ourCandidate">
+                  {organizationType === 'territorial' ? "C'est notre candidat" : "C'est notre liste/candidat"}
+                </Label>
               </div>
               
               <Button 
@@ -395,7 +437,12 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
         return (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="totalCenters">Nombre total de Centres de Vote prévus</Label>
+              <Label htmlFor="totalCenters">
+                {organizationType === 'territorial' 
+                  ? 'Nombre total de Centres de Vote prévus'
+                  : 'Nombre total de Lieux de Vote prévus'
+                }
+              </Label>
               <Input
                 id="totalCenters"
                 type="number"
@@ -407,7 +454,12 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
             </div>
             
             <div>
-              <Label htmlFor="averageBureaux">Nombre moyen de Bureaux de Vote par Centre</Label>
+              <Label htmlFor="averageBureaux">
+                {organizationType === 'territorial'
+                  ? 'Nombre moyen de Bureaux de Vote par Centre'
+                  : 'Nombre moyen de Postes de Vote par Lieu'
+                }
+              </Label>
               <Input
                 id="averageBureaux"
                 type="number"
@@ -422,7 +474,12 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
             </div>
             
             <div>
-              <Label htmlFor="totalVoters">Nombre total d'Électeurs inscrits (estimation)</Label>
+              <Label htmlFor="totalVoters">
+                {organizationType === 'territorial'
+                  ? "Nombre total d'Électeurs inscrits (estimation)"
+                  : "Nombre total d'Employés électeurs (estimation)"
+                }
+              </Label>
               <Input
                 id="totalVoters"
                 type="number"
@@ -437,7 +494,7 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-blue-900 mb-2">Estimation automatique</h4>
                 <p className="text-blue-800">
-                  Total estimé de bureaux de vote : <strong>{formData.totalCenters * formData.averageBureaux}</strong>
+                  Total estimé de {organizationType === 'territorial' ? 'bureaux de vote' : 'postes de vote'} : <strong>{formData.totalCenters * formData.averageBureaux}</strong>
                 </p>
               </div>
             )}
@@ -476,9 +533,14 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
                   </div>
                   
                   <div>
-                    <span className="font-medium">Circonscription :</span>
+                    <span className="font-medium">
+                      {organizationType === 'territorial' ? 'Circonscription :' : 'Périmètre :'}
+                    </span>
                     <p className="text-gray-700">
-                      {formData.province} {formData.department ? `→ ${formData.department}` : ''} {formData.commune ? `→ ${formData.commune}` : ''} {formData.arrondissement ? `→ ${formData.arrondissement}` : ''}
+                      {organizationType === 'territorial' 
+                        ? `${formData.province} ${formData.department ? `→ ${formData.department}` : ''} ${formData.commune ? `→ ${formData.commune}` : ''} ${formData.arrondissement ? `→ ${formData.arrondissement}` : ''}`
+                        : `${formData.company} ${formData.direction ? `→ ${formData.direction}` : ''} ${formData.service ? `→ ${formData.service}` : ''}`
+                      }
                     </p>
                   </div>
                 </div>
@@ -494,13 +556,15 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
                   <div>
                     <span className="font-medium">Structure :</span>
                     <p className="text-gray-700">
-                      {formData.totalCenters} centres de vote, ~{formData.totalCenters * formData.averageBureaux} bureaux de vote
+                      {formData.totalCenters} {organizationType === 'territorial' ? 'centres' : 'lieux'} de vote, ~{formData.totalCenters * formData.averageBureaux} {organizationType === 'territorial' ? 'bureaux' : 'postes'} de vote
                     </p>
                   </div>
                   
                   <div>
-                    <span className="font-medium">Électeurs :</span>
-                    <p className="text-gray-700">~{formData.totalVoters.toLocaleString('fr-FR')} électeurs</p>
+                    <span className="font-medium">
+                      {organizationType === 'territorial' ? 'Électeurs :' : 'Employés électeurs :'}
+                    </span>
+                    <p className="text-gray-700">~{formData.totalVoters.toLocaleString('fr-FR')}</p>
                   </div>
                   
                   {formData.budget > 0 && (
@@ -526,7 +590,9 @@ const ElectionWizard: React.FC<ElectionWizardProps> = ({ onClose, onSubmit }) =>
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gov-gray">Configurer une nouvelle élection</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gov-gray">
+              Configurer une nouvelle élection {organizationType === 'territorial' ? 'territoriale' : 'professionnelle'}
+            </h2>
             <p className="text-sm sm:text-base text-gray-600">Étape {currentStep} sur 5 : {steps[currentStep - 1]}</p>
           </div>
           <Button variant="ghost" onClick={onClose} className="flex-shrink-0">
