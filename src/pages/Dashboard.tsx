@@ -1,5 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +21,15 @@ const Dashboard = () => {
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [activeElection, setActiveElection] = useState<FlexibleElection | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization, isLoading } = useOrganization();
+  const navigate = useNavigate();
+
+  // Rediriger vers le sélecteur d'organisation si aucune organisation n'est sélectionnée
+  useEffect(() => {
+    if (!isLoading && !currentOrganization) {
+      navigate('/organizations');
+    }
+  }, [currentOrganization, isLoading, navigate]);
 
   useEffect(() => {
     if (!currentOrganization) return;
@@ -66,7 +74,25 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [activeElection]);
 
-  // Données adaptées au contexte de l'organisation
+  // Afficher un loader pendant le chargement
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Chargement...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Si pas d'organisation, on ne devrait pas arriver ici car on redirige
+  if (!currentOrganization) {
+    return null;
+  }
+
   const dashboardData = {
     votersRegistered: {
       total: activeElection?.voters || 0,
@@ -83,20 +109,6 @@ const Dashboard = () => {
       status: "À valider"
     }
   };
-
-  if (!currentOrganization) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <Building className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Aucune organisation sélectionnée</h2>
-            <p className="text-gray-600">Veuillez sélectionner une organisation pour continuer</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
