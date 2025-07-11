@@ -22,12 +22,13 @@ import {
   MapPin
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { FlexibleElection } from '@/types/election';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -53,6 +54,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const isMobile = useIsMobile();
+  const [activeElection, setActiveElection] = useState<FlexibleElection | null>(null);
   const {
     notifications,
     unreadCount,
@@ -61,14 +63,39 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     removeNotification,
   } = useNotifications();
 
-  // Menu items adaptés au contexte de l'organisation
+  // Charger l'élection active
+  useEffect(() => {
+    if (!currentOrganization) return;
+
+    const electionsData = localStorage.getItem('elections');
+    if (electionsData) {
+      const allElections: FlexibleElection[] = JSON.parse(electionsData);
+      const orgElections = allElections.filter(e => e.organizationId === currentOrganization.id);
+      const active = orgElections.find(e => e.isActive);
+      setActiveElection(active || null);
+    }
+  }, [currentOrganization]);
+
+  // Menu items adaptés selon l'élection active
   const getMenuItems = () => {
     const baseItems = [
       { icon: Home, label: 'Tableau de Bord', path: '/dashboard' },
-      { icon: Calendar, label: 'Élections', path: '/elections' },
     ];
 
-    // Menu contextuel selon le type d'organisation
+    // Si pas d'élection active, on ne montre que le tableau de bord et la gestion des élections
+    if (!activeElection) {
+      baseItems.push(
+        { icon: Calendar, label: 'Élections', path: '/elections' }
+      );
+      return baseItems;
+    }
+
+    // Menu contextuel selon l'élection active
+    baseItems.push(
+      { icon: Calendar, label: 'Élections', path: '/elections' }
+    );
+
+    // Centres/Lieux de Vote - seulement si l'élection est active
     if (currentOrganization?.type === 'territorial') {
       baseItems.push(
         { icon: MapPin, label: 'Centres de Vote', path: '/centers' }
@@ -79,11 +106,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       );
     }
 
-    // Menus universels
+    // Gestion des utilisateurs - seulement si élection active
     baseItems.push(
-      { icon: Users, label: 'Gestion Utilisateurs', path: '/users' },
-      { icon: BarChart3, label: 'Centralisation Résultats', path: '/results' },
-      { icon: Megaphone, label: 'Gestion Campagne', path: '/campaign' },
+      { icon: Users, label: 'Gestion Utilisateurs', path: '/users' }
+    );
+
+    // Centralisation des résultats - seulement si élection active
+    baseItems.push(
+      { icon: BarChart3, label: 'Centralisation Résultats', path: '/results' }
+    );
+
+    // Gestion de campagne - seulement si élection active
+    baseItems.push(
+      { icon: Megaphone, label: 'Gestion Campagne', path: '/campaign' }
+    );
+
+    // Conversations - seulement si élection active
+    baseItems.push(
       { icon: MessageSquare, label: 'Conversations', path: '/conversations' }
     );
 
@@ -123,7 +162,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="min-w-0">
                 <h1 className="font-bold text-lg truncate">iKadi</h1>
                 <p className="text-xs text-blue-200 truncate">
-                  {currentOrganization?.type === 'territorial' ? 'Élections Territoriales' : 
+                  {activeElection ? activeElection.title : 
+                   currentOrganization?.type === 'territorial' ? 'Élections Territoriales' : 
                    currentOrganization?.type === 'professional' ? 'Élections Professionnelles' : 
                    'Gestion Électorale'}
                 </p>
@@ -153,6 +193,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </li>
             ))}
           </ul>
+
+          {/* Indicateur d'élection active */}
+          {activeElection && (sidebarOpen || isMobile) && (
+            <div className="mt-6 p-3 bg-gov-blue-light rounded-lg">
+              <div className="flex items-center space-x-2 mb-2">
+                <Calendar size={16} className="text-blue-200" />
+                <span className="text-xs font-medium text-blue-200">Élection Active</span>
+              </div>
+              <p className="text-sm font-medium text-white truncate mb-1">
+                {activeElection.title}
+              </p>
+              <p className="text-xs text-blue-200">
+                {new Date(activeElection.date).toLocaleDateString('fr-FR')}
+              </p>
+            </div>
+          )}
         </nav>
 
         <div className="flex-shrink-0 p-2 sm:p-4 border-t border-gov-blue-light">
