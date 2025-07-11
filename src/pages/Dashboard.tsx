@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -16,11 +17,14 @@ import {
 } from 'lucide-react';
 import { Organization, FlexibleElection } from '@/types/election';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import ElectionWizard from '@/components/elections/ElectionWizard';
 
 const Dashboard = () => {
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [activeElection, setActiveElection] = useState<FlexibleElection | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [showElectionWizard, setShowElectionWizard] = useState(false);
+  const [elections, setElections] = useState<FlexibleElection[]>([]);
   const { currentOrganization, isLoading } = useOrganization();
   const navigate = useNavigate();
 
@@ -41,11 +45,14 @@ const Dashboard = () => {
     const isRecent = timeDiff < 5 * 60 * 1000; // 5 minutes
     setIsNewUser(isRecent);
 
-    // Récupérer l'élection active pour cette organisation
+    // Charger toutes les élections pour cette organisation
     const electionsData = localStorage.getItem('elections');
     if (electionsData) {
-      const elections: FlexibleElection[] = JSON.parse(electionsData);
-      const active = elections.find(e => e.organizationId === currentOrganization.id && e.isActive);
+      const allElections: FlexibleElection[] = JSON.parse(electionsData);
+      const orgElections = allElections.filter(e => e.organizationId === currentOrganization.id);
+      setElections(orgElections);
+      
+      const active = orgElections.find(e => e.isActive);
       setActiveElection(active || null);
     }
   }, [currentOrganization]);
@@ -73,6 +80,33 @@ const Dashboard = () => {
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
   }, [activeElection]);
+
+  const handleCreateElection = () => {
+    setShowElectionWizard(true);
+  };
+
+  const handleElectionCreated = (newElection: any) => {
+    // Ajouter l'ID de l'organisation et un ID unique
+    const electionWithId = {
+      ...newElection,
+      id: Date.now(),
+      organizationId: currentOrganization!.id
+    };
+
+    // Sauvegarder dans localStorage
+    const existingElections = JSON.parse(localStorage.getItem('elections') || '[]');
+    const updatedElections = [...existingElections, electionWithId];
+    localStorage.setItem('elections', JSON.stringify(updatedElections));
+
+    // Mettre à jour l'état local
+    setElections(prev => [...prev, electionWithId]);
+    if (electionWithId.isActive) {
+      setActiveElection(electionWithId);
+    }
+
+    setShowElectionWizard(false);
+    console.log('Nouvelle élection créée:', electionWithId);
+  };
 
   // Afficher un loader pendant le chargement
   if (isLoading) {
@@ -107,7 +141,10 @@ const Dashboard = () => {
     pvsWaiting: {
       count: 37,
       status: "À valider"
-    }
+    },
+    totalElections: elections.length,
+    activeElections: elections.filter(e => e.isActive).length,
+    upcomingElections: elections.filter(e => new Date(e.date) > new Date()).length
   };
 
   return (
@@ -183,6 +220,7 @@ const Dashboard = () => {
                 variant="secondary" 
                 size="sm"
                 className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                onClick={handleCreateElection}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Nouvelle Élection
@@ -190,6 +228,30 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Statistiques rapides sur les élections */}
+        {elections.length > 0 && (
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-blue-600">{dashboardData.totalElections}</div>
+                <p className="text-blue-700 text-sm">Élections totales</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-green-50 border-green-200">
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-green-600">{dashboardData.activeElections}</div>
+                <p className="text-green-700 text-sm">Élections actives</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-orange-50 border-orange-200">
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-orange-600">{dashboardData.upcomingElections}</div>
+                <p className="text-orange-700 text-sm">À venir</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Élection Active ou Invitation à Créer */}
         {activeElection ? (
@@ -253,7 +315,10 @@ const Dashboard = () => {
               <p className="text-gray-600 mb-6">
                 Créez votre première élection pour <strong>{currentOrganization.name}</strong>
               </p>
-              <Button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+              <Button 
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                onClick={handleCreateElection}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Créer une élection
               </Button>
@@ -353,15 +418,19 @@ const Dashboard = () => {
                     {new Date(currentOrganization.createdAt).toLocaleDateString('fr-FR')}
                   </span>
                 </div>
+                {elections.length > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <span className="text-sm">
+                      {elections.length} élection{elections.length > 1 ? 's' : ''} configurée{elections.length > 1 ? 's' : ''}
+                    </span>
+                    <span className="text-xs text-gray-500">Récent</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
                   <span className="text-sm">
                     {currentOrganization.type === 'territorial' ? 'Configuration territoriale initialisée' : 'Configuration professionnelle initialisée'}
                   </span>
                   <span className="text-xs text-gray-500">Il y a 1h</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <span className="text-sm">Utilisateur administrateur configuré</span>
-                  <span className="text-xs text-gray-500">Il y a 2h</span>
                 </div>
               </div>
             </CardContent>
@@ -407,7 +476,26 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Bouton flottant pour mobile */}
+        <div className="lg:hidden fixed bottom-6 right-6">
+          <Button
+            onClick={handleCreateElection}
+            className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg"
+            size="lg"
+          >
+            <Plus className="w-6 h-6" />
+          </Button>
+        </div>
       </div>
+
+      {/* Modal du wizard d'élection */}
+      {showElectionWizard && (
+        <ElectionWizard
+          onClose={() => setShowElectionWizard(false)}
+          onSubmit={handleElectionCreated}
+        />
+      )}
     </Layout>
   );
 };
